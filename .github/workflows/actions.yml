@@ -1,0 +1,53 @@
+name: linux-build-dist
+on: [push, pull_request]
+jobs:
+  build-perls:
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        perl: [34, 32]
+    steps:
+      - uses: actions/checkout@v2
+      - name: set environment variables
+        env:
+          PERL_NAME: perl-5.${{ matrix.perl }}.0
+          PERL_DIR: ~/perl/${{ runner.os }}/5.${{ matrix.perl }}
+        run: |
+          ./.github/scripts/set_environment_variables.sh
+      - name: perl cache
+        env:
+          CACHE_KEY: ${{ runner.os }}-perl-${{ matrix.perl }}
+        id: cache-perl
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.PERL_DIR }}
+          key: ${{ env.CACHE_KEY }}
+      - name: install perl
+        if: steps.cache-perl.outputs.cache-hit != 'true'
+        run: |
+          ./.github/scripts/install_perl.sh
+  install-dist-linux:
+    runs-on: ubuntu-20.04
+    needs: [build-perls]
+    strategy:
+      matrix:
+        perl: [34, 32]
+    steps:
+      - uses: actions/checkout@v2
+      - name: set environment variables
+        env:
+          PERL_NAME: perl-5.${{ matrix.perl }}.0
+          PERL_DIR: ~/perl/${{ runner.os }}/5.${{ matrix.perl }}
+        run: |
+          ./.github/scripts/set_environment_variables.sh
+      - name: perl cache
+        env:
+          CACHE_KEY: ${{ runner.os }}-perl-${{ matrix.perl }}
+        id: cache-perl
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.PERL_DIR }}
+          key: ${{ env.CACHE_KEY }}
+      - name: install Alien::GSL
+        run: |
+          ./.github/scripts/build_and_test.sh
